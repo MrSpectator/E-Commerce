@@ -1,0 +1,23 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Active Listings</h2>
+    {% for item in list %}
+        <div style="display: flex; align-items: flex-start; margin-bottom: 20px;">
+            {% if item.image %}
+                <img src="{{ item.image }}" alt="{{ item.title }}" width="300" style="margin-right: 20px;">
+            {% endif %}
+            <div>
+                <a href="{% url 'listing' item.id %}" style="font-weight: bold; font-size: 1.5em;">
+                    {{ item.title.capitalize }}
+                </a>
+                <p>{{ item.description }}</p>
+                <p>Price: ${{ item.start_bid }}</p>
+                <p>Created {{ item.date }}</p>
+            </div>
+        </div>
+        <hr>
+    {% empty %}
+        <p>No Listings Yet</p>
+    {% endfor %}
+{% endblock %}
