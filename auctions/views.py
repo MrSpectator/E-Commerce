@@ -93,7 +93,7 @@ def register(request):
 @login_required
 def create_listing(request):
     if request.method == "POST":
-        form = NewListingForm(request.POST)
+        form = NewListingForm(request.POST, request.FILES)
         if form.is_valid():
             listing = form.save(commit=False)
             listing.creator = request.user
@@ -162,14 +162,22 @@ def bid(request, listing_id):
         if listing.creator == request.user:
             return render(request, "auctions/listing.html", {
                 "listing": listing,
-                "error": "You cannot bid on your own listing"
+                "error": "You cannot bid on your own listing",
+                "watchlist": Watchlist.objects.get(user=request.user),
+                "max_bid": listing.bids.aggregate(Max('amount'))['amount__max'],
+                "current_bid": listing.bids.order_by('-amount').first(),
+                "comments": Comment.objects.filter(listing=listing),
             })
         
         # Check if the bid is higher than the start bid
         if amount <= listing.start_bid:
             return render(request, "auctions/listing.html", {
                 "listing": listing,
-                "error": "Bid must be higher than the start bid"
+                "error": "Bid must be higher than the start bid",
+                "watchlist": Watchlist.objects.get(user=request.user),
+                "max_bid": listing.bids.aggregate(Max('amount'))['amount__max'],
+                "current_bid": listing.bids.order_by('-amount').first(),
+                "comments": Comment.objects.filter(listing=listing),
             })
         
         # Check if there are previous bids
@@ -179,7 +187,11 @@ def bid(request, listing_id):
             if amount <= previous_bid.amount:
                 return render(request, "auctions/listing.html", {
                     "listing": listing,
-                    "error": "Bid must be higher than the current bid"
+                    "error": "Bid must be higher than the current bid",
+                    "watchlist": Watchlist.objects.get(user=request.user),
+                    "max_bid": listing.bids.aggregate(Max('amount'))['amount__max'],
+                    "current_bid": listing.bids.order_by('-amount').first(),
+                    "comments": Comment.objects.filter(listing=listing),
                 })
         
         new_bid = Bid(amount=amount, listing=listing, user=request.user)
@@ -191,8 +203,9 @@ def comments(request, pk):
     if request.method == "POST":
         listing = Listing.objects.get(pk=pk)
         comment = request.POST["comment"]
-        comments = Comment(comment=comment, listing=listing, user=request.user)
-        comments.save()
+        if comment.strip():  # Ensure the comment is not empty
+            comments = Comment(comment=comment, listing=listing, user=request.user)
+            comments.save()
         return HttpResponseRedirect(reverse("listing", args=(pk,)))
 
 @login_required

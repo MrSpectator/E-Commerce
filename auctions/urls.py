@@ -11,7 +11,7 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register, name="register"),
-    path("create/", views.create_listing, name="listing"),
+    path("create/", views.create_listing, name="create_listing"),
     path("active/", views.listing_view, name="active"),
     path("<int:listing_id>", views.listing, name="listing"),
     path('watchlist/add/<int:listing_id>/', views.add_watchlist, name='add_watchlist'),
@@ -22,4 +22,4 @@ urlpatterns = [
     path('watchlist/', views.watchlist, name='watchlist'),
     path('categories/', views.categories, name='categories'),
     path('categories/<str:category_name>', views.category, name='category'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

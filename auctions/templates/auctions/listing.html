@@ -46,40 +46,64 @@
         {% if comments == None %}
             Be the first to comment
         {% endif %}
-        <form action="{% url 'comments' listing.id %}" method="post">
+        <form action="{% url 'comments' listing.id %}" method="post" onsubmit="return validateComment()">
             {% csrf_token %}
-            <input autofocus class="form-control" type="text" name="comment" placeholder="Add comment">
+            <input autofocus class="form-control" type="text" name="comment" placeholder="Add comment" id="comment-input">
             <div>
                 <button type="submit">Submit</button>
             </div>
+            <p id="comment-error" style="color: red; display: none;">Comment cannot be empty.</p>
         </form>
     {% else %}
         <p>This listing is closed.</p>
         {% if request.user == current_bid.user %}
             <b>You have won this auction</b>
         {% else %}
-            <p>The winner of this listing is: <strong>{{ current_bid.user.username.capitalize }}</strong></p>
+            <p>The winner of this listing is: <strong>{{ current_bid.user.username|capfirst }}</strong></p>
         {% endif %}
     {% endif %}
 
     <div>
         {% if user.is_authenticated %}
             <strong>Comments</strong>
-            {% if comments == None %}
-                <p>No comments yet</p>
-            {% else %}
-                <ul>
-                    {% for comment in comments %}
-                        <li>{{ comment.user.username.capitalize }}: {{ comment.comment }}</li>
-                    {% endfor %}
-                </ul>   
-            {% endif %}
+            <div id="comments-section">
+                {% if comments == None %}
+                    <p>No comments yet</p>
+                {% else %}
+                    <ul>
+                        {% for comment in comments %}
+                            <li>
+                                {{ comment.user.username|capfirst }}: {{ comment.comment }}
+                                <button type="button" onclick="toggleReplyForm('{{ comment.id }}')">Reply</button>
+                                <div id="reply-form-{{ comment.id }}" style="display: none;">
+                                    <form action="{% url 'comments' listing.id %}" method="post" onsubmit="return validateReply('{{ comment.id }}')">
+                                        {% csrf_token %}
+                                        <input autofocus class="form-control" type="text" name="comment" placeholder="Reply to comment" id="reply-input-{{ comment.id }}">
+                                        <div>
+                                            <button type="submit">Submit</button>
+                                        </div>
+                                        <p id="reply-error-{{ comment.id }}" style="color: red; display: none;">Comment cannot be empty.</p>
+                                    </form>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>   
+                {% endif %}
+                <form action="{% url 'comments' listing.id %}" method="post" onsubmit="return validateComment()">
+                    {% csrf_token %}
+                    <input autofocus class="form-control" type="text" name="comment" placeholder="Add comment" id="comment-input">
+                    <div>
+                        <button type="submit">Submit</button>
+                    </div>
+                    <p id="comment-error" style="color: red; display: none;">Comment cannot be empty.</p>
+                </form>
+            </div>
         {% endif %} 
     </div>
 
     <h3>Details</h3>
     <ul>
-        <li>Listed by: {{ listing.creator.username.capitalize }}</li>
+        <li>Listed by: {{ listing.creator.username|capfirst }}</li>
         <li>
             {% if listing.category %}
                 Category: {{ listing.category }}
@@ -98,5 +122,37 @@
         {% endif %}
     {% endif %}
          
-        
 {% endblock %}
+
+<script>
+    function toggleReplyForm(commentId) {
+        var replyForm = document.getElementById("reply-form-" + commentId);
+        if (replyForm.style.display === "none") {
+            replyForm.style.display = "block";
+        } else {
+            replyForm.style.display = "none";
+        }
+    }
+
+    function validateComment() {
+        var commentInput = document.getElementById("comment-input");
+        var commentError = document.getElementById("comment-error");
+        if (commentInput.value.trim() === "") {
+            commentError.style.display = "block";
+            return false;
+        }
+        commentError.style.display = "none";
+        return true;
+    }
+
+    function validateReply(commentId) {
+        var replyInput = document.getElementById("reply-input-" + commentId);
+        var replyError = document.getElementById("reply-error-" + commentId);
+        if (replyInput.value.trim() === "") {
+            replyError.style.display = "block";
+            return false;
+        }
+        replyError.style.display = "none";
+        return true;
+    }
+</script>
