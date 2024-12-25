@@ -206,7 +206,20 @@ def comments(request, pk):
         if comment.strip():  # Ensure the comment is not empty
             comments = Comment(comment=comment, listing=listing, user=request.user)
             comments.save()
-        return HttpResponseRedirect(reverse("listing", args=(pk,)))
+            return HttpResponseRedirect(reverse("listing", args=(pk,)))
+        else:
+            comments = Comment.objects.filter(listing=listing)
+            max_bid = listing.bids.aggregate(Max('amount'))['amount__max']
+            current_bid = listing.bids.filter(amount=max_bid).first()
+            watchlist, created = Watchlist.objects.get_or_create(user=request.user)
+            return render(request, "auctions/listing.html", {
+                "listing": listing,
+                "watchlist": watchlist,
+                "max_bid": max_bid,
+                "current_bid": current_bid,
+                "comments": comments,
+                "error": "Comment cannot be empty."
+            })
 
 @login_required
 def watchlist(request):
